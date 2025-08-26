@@ -8,31 +8,31 @@ import api from '../../services/apiClient';
 import OverlayLoader from '../../components/loader/OverlayLoader';
 
 export default function Profile() {
-  const [perfis, setPerfis] = React.useState([]);
+  const [profiles, setProfiles] = React.useState([]);
   const [permissoes, setPermissoes] = React.useState([]);
-  const [abrir, setAbrir] = React.useState(false);
-  const [editando, setEditando] = React.useState(null);
-  const [salvando, setSalvando] = React.useState(false);
-  const [carregando, setCarregando] = React.useState(false);
-  const [carregandoPerms, setCarregandoPerms] = React.useState(false);
+  const [open, setOpen] = React.useState(false);
+  const [edting, setsetEdting] = React.useState(null);
+  const [saving, setSaving] = React.useState(false);
+  const [load, setLoad] = React.useState(false);
+  const [carregandoPerms, setLoadPerms] = React.useState(false);
   const [erro, setErro] = React.useState('');
 
   const [nome, setNome] = React.useState('');
   const [permissionIds, setPermissionIds] = React.useState([]);
 
-  function limparForm() {
+  function ClearFoms() {
     setNome('');
     setPermissionIds([]);
   }
 
-  function abrirCriacao() {
-    setEditando(null);
-    limparForm();
-    setAbrir(true);
+  function OpenCreate() {
+    setsetEdting(null);
+    ClearFoms();
+    setOpen(true);
   }
 
-  function abrirEdicao(p) {
-    setEditando(p);
+  function openEditing(p) {
+    setsetEdting(p);
     setNome(p.name || '');
     const ids = Array.isArray(p.permissions)
       ? p.permissions
@@ -40,77 +40,77 @@ export default function Profile() {
           .filter(Boolean)
       : [];
     setPermissionIds(ids);
-    setAbrir(true);
+    setOpen(true);
   }
 
-  function fecharModal() {
-    setAbrir(false);
+  function closeModal() {
+    setOpen(false);
     setErro('');
   }
 
-  async function listarPerfis() {
-    setCarregando(true);
+  async function get_profile() {
+    setLoad(true);
     setErro('');
     try {
       const { data } = await api.get('/profiles');
-      setPerfis(data);
+      setProfiles(data);
     } catch {
       setErro('Não foi possível carregar perfis');
     } finally {
-      setCarregando(false);
+      setLoad(false);
     }
   }
 
-  async function listarPermissoes() {
-    setCarregandoPerms(true);
+  async function get_permissions() {
+    setLoadPerms(true);
     try {
       const { data } = await api.get('/permissions');
       setPermissoes(data);
     } catch {
       setErro('Não foi possível carregar permissões');
     } finally {
-      setCarregandoPerms(false);
+      setLoadPerms(false);
     }
   }
 
-  async function salvar(e) {
+  async function post_profile(e) {
     e.preventDefault();
     setErro('');
-    setSalvando(true);
+    setSaving(true);
     try {
       const payload = { name: nome, permission_ids: permissionIds };
-      if (editando) {
-        await api.put(`/profiles/${editando.id}`, payload);
+      if (edting) {
+        await api.put(`/profiles/${edting.id}`, payload);
       } else {
         await api.post('/profiles', payload);
       }
-      await listarPerfis();
-      fecharModal();
+      await get_profile();
+      closeModal();
     } catch (err) {
       const msg = err?.response?.data?.error || err?.response?.data || 'Falha ao salvar perfil';
       setErro(typeof msg === 'string' ? msg : 'Falha ao salvar perfil');
     } finally {
-      setSalvando(false);
+      setSaving(false);
     }
   }
 
   async function remover(p) {
     setErro('');
-    setSalvando(true);
+    setSaving(true);
     try {
       await api.delete(`/profiles/${p.id}`);
-      await listarPerfis();
+      await get_profile();
     } catch (err) {
       const msg = err?.response?.data || 'Falha ao remover perfil';
       setErro(typeof msg === 'string' ? msg : 'Falha ao remover perfil');
     } finally {
-      setSalvando(false);
+      setSaving(false);
     }
   }
 
   React.useEffect(() => {
-    listarPermissoes();
-    listarPerfis();
+    get_permissions();
+    get_profile();
   }, []);
 
   const opcoesSelecionadas = permissoes.filter((opt) => permissionIds.includes(opt.id));
@@ -119,7 +119,7 @@ export default function Profile() {
     <Box p={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h5">Perfis</Typography>
-        <Button variant="contained" onClick={abrirCriacao}>Novo</Button>
+        <Button variant="contained" onClick={OpenCreate}>Novo</Button>
       </Stack>
 
       {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
@@ -136,7 +136,7 @@ export default function Profile() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {perfis.map((p) => (
+              {profiles.map((p) => (
                 <TableRow key={p.id} hover>
                   <TableCell>{p.id}</TableCell>
                   <TableCell>{p.name}</TableCell>
@@ -155,7 +155,7 @@ export default function Profile() {
                   <TableCell align="right">
                     <Grid container spacing={1} justifyContent="flex-end">
                       <Grid item>
-                        <Button size="small" variant="outlined" onClick={() => abrirEdicao(p)}>Editar</Button>
+                        <Button size="small" variant="outlined" onClick={() => openEditing(p)}>Editar</Button>
                       </Grid>
                       <Grid item>
                         <Button
@@ -172,7 +172,7 @@ export default function Profile() {
                   </TableCell>
                 </TableRow>
               ))}
-              {perfis.length === 0 && !carregando && (
+              {profiles.length === 0 && !load && (
                 <TableRow>
                   <TableCell colSpan={4}>Nenhum perfil encontrado</TableCell>
                 </TableRow>
@@ -180,14 +180,14 @@ export default function Profile() {
             </TableBody>
           </Table>
         </TableContainer>
-        <OverlayLoader aberto={carregando} />
+        <OverlayLoader aberto={load} />
       </Box>
 
-      <Dialog open={abrir} onClose={fecharModal} fullWidth maxWidth="sm" keepMounted>
-        <DialogTitle>{editando ? 'Editar Perfil' : 'Novo Perfil'}</DialogTitle>
+      <Dialog open={open} onClose={closeModal} fullWidth maxWidth="sm" keepMounted>
+        <DialogTitle>{edting ? 'Editar Perfil' : 'Novo Perfil'}</DialogTitle>
         <DialogContent dividers sx={{ pt: 2 }}>
           {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
-          <Box component="form" id="profile-form" onSubmit={salvar} sx={{ position: 'relative' }}>
+          <Box component="form" id="profile-form" onSubmit={post_profile} sx={{ position: 'relative' }}>
             <Stack spacing={2}>
               <TextField label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} fullWidth required />
               <Autocomplete
@@ -201,13 +201,13 @@ export default function Profile() {
                 renderInput={(params) => <TextField {...params} label="Permissões" placeholder="Selecionar" />}
               />
             </Stack>
-            <OverlayLoader aberto={salvando} />
+            <OverlayLoader aberto={saving} />
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={fecharModal} disabled={salvando}>Cancelar</Button>
-          <Button type="submit" form="profile-form" variant="contained" disabled={salvando}>
-            {editando ? 'Salvar' : 'Criar'}
+          <Button onClick={closeModal} disabled={saving}>Cancelar</Button>
+          <Button type="submit" form="profile-form" variant="contained" disabled={saving}>
+            {edting ? 'Salvar' : 'Criar'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -4,8 +4,6 @@ import { createBrowserRouter, RouterProvider } from 'react-router';
 import App from './App';
 import Layout from './layouts/DashboardLayout';
 import Home from './pages/Home';
-import LordOfTheRings from './pages/movies/LordOfTheRings';
-import HarryPotter from './pages/movies/HarryPotter';
 import User from './pages/admin/User';
 import Profile from './pages/admin/Profile';
 import Permissions from './pages/admin/Permissions';
@@ -33,8 +31,6 @@ const router = createBrowserRouter([
             Component: Layout,
             children: [
               { path: '', Component: Home },
-              { path: 'movies/lord-of-the-rings', Component: LordOfTheRings },
-              { path: 'movies/harry-potter', Component: HarryPotter },
               { path: 'admin/user', Component: UserPage },
               { path: 'admin/profile', Component: ProfilePage },
               { path: 'admin/permission', Component: PermissionsPage },

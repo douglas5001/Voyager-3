@@ -7,9 +7,6 @@ import '@fontsource/roboto/700.css';
 import { createTheme } from '@mui/material/styles';
 import { ReactRouterAppProvider } from '@toolpad/core/react-router';
 import { Outlet } from 'react-router';
-
-import FolderIcon from '@mui/icons-material/Folder';
-import DescriptionIcon from '@mui/icons-material/Description';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import PersonIcon from '@mui/icons-material/Person';
 import BadgeIcon from '@mui/icons-material/Badge';
@@ -23,15 +20,6 @@ const theme = createTheme({
 });
 
 const baseNavigation = [
-  {
-    segment: 'movies',
-    title: 'Movies',
-    icon: <FolderIcon />,
-    children: [
-      { segment: 'lord-of-the-rings', title: 'Lord of the Rings', icon: <DescriptionIcon /> },
-      { segment: 'harry-potter', title: 'Harry Potter', icon: <DescriptionIcon /> },
-    ],
-  },
   {
     segment: 'admin',
     title: 'Admin',
@@ -47,13 +35,13 @@ const baseNavigation = [
 
 const branding = { title: 'RPA' };
 
-function filtrar(itens, { possuiTodas, possuiAlguma }) {
+function filtrar(itens, { ownsAll, hasSome }) {
   return itens
     .map((n) => {
-      const filhos = n.children ? filtrar(n.children, { possuiTodas, possuiAlguma }) : undefined;
+      const filhos = n.children ? filtrar(n.children, { ownsAll, hasSome }) : undefined;
       const all = Array.isArray(n.allOf) ? n.allOf : n.permission ? [n.permission] : [];
       const any = Array.isArray(n.anyOf) ? n.anyOf : [];
-      const permitido = possuiTodas(all) && possuiAlguma(any);
+      const permitido = ownsAll(all) && hasSome(any);
       if (!permitido) return null;
       if (Array.isArray(filhos) && filhos.length === 0) return null;
       return { ...n, children: filhos };
@@ -63,8 +51,8 @@ function filtrar(itens, { possuiTodas, possuiAlguma }) {
 
 
 export default function App() {
-  const { usuario, sair, possuiTodas, possuiAlguma } = useAuth();
-  const navigation = filtrar(baseNavigation, { possuiTodas, possuiAlguma });
+  const { usuario, sair, ownsAll, hasSome } = useAuth();
+  const navigation = filtrar(baseNavigation, { ownsAll, hasSome });
 
   const session = usuario ? { user: { name: usuario.name, email: usuario.email, image: usuario.image } } : null;
 
