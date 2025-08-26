@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {
   Box, Typography, Button, Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  TextField, Checkbox, FormControlLabel, Stack, Alert, Dialog, DialogTitle, DialogContent, DialogActions, Switch, Avatar
+  TextField, Checkbox, FormControlLabel, Stack, Alert, Dialog, DialogTitle, DialogContent, DialogActions, Switch, Avatar, Autocomplete
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import api from '../../services/apiClient';
@@ -9,70 +9,64 @@ import OverlayLoader from '../../components/loader/OverlayLoader';
 
 export default function User() {
   const [users, setUsers] = React.useState([]);
-  const [abrir, setAbrir] = React.useState(false);
-  const [editando, setEditando] = React.useState(null);
+  const [profiles, setProfiles] = React.useState([]);
+  const [open, setOpen] = React.useState(false);
+  const [editing, setEditing] = React.useState(null);
   const [erro, setErro] = React.useState('');
-  const [carregando, setCarregando] = React.useState(false);
-  const [salvando, setSalvando] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
 
   const [nome, setNome] = React.useState('');
   const [email, setEmail] = React.useState('');
   const [senha, setSenha] = React.useState('');
-  const [profileId, setProfileId] = React.useState('');
+  const [perfilSelecionado, setPerfilSelecionado] = React.useState(null);
   const [isAdmin, setIsAdmin] = React.useState(false);
   const [imagem, setImagem] = React.useState(null);
 
-  const [alterarSenha, setAlterarSenha] = React.useState(false);
-  const [alterarImagem, setAlterarImagem] = React.useState(false);
+  const [alterPassword, setAlterPassword] = React.useState(false);
+  const [alterImage, setAlterImage] = React.useState(false);
 
-
-  function iniciais(nome) {
-    return (nome || '')
-      .split(' ')
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((p) => p[0])
-      .join('')
-      .toUpperCase() || '?';
+  function init(valor) {
+    return (valor || '').split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]).join('').toUpperCase() || '?';
   }
-  
-  function limparFormulario() {
+
+  function clearForms() {
     setNome('');
     setEmail('');
     setSenha('');
-    setProfileId('');
+    setPerfilSelecionado(null);
     setIsAdmin(false);
     setImagem(null);
-    setAlterarSenha(false);
-    setAlterarImagem(false);
+    setAlterPassword(false);
+    setAlterImage(false);
   }
 
-  function abrirCriacao() {
-    setEditando(null);
-    limparFormulario();
-    setAbrir(true);
+  function openCreate() {
+    setEditing(null);
+    clearForms();
+    setOpen(true);
   }
 
-  function abrirEdicao(u) {
-    setEditando(u);
+  function openEdit(u) {
+    setEditing(u);
     setNome(u.name || '');
     setEmail(u.email || '');
     setSenha('');
-    setProfileId(String(u.profile_id ?? ''));
+    setPerfilSelecionado(profiles.find((p) => p.id === u.profile_id) || null);
     setIsAdmin(Boolean(u.is_admin));
     setImagem(null);
-    setAlterarSenha(false);
-    setAlterarImagem(false);
-    setAbrir(true);
+    setAlterPassword(false);
+    setAlterImage(false);
+    setOpen(true);
   }
 
-  function fecharModal() {
-    setAbrir(false);
+  function closeModal() {
+    setOpen(false);
     setErro('');
   }
 
-  async function listar() {
-    setCarregando(true);
+  async function get_user() {
+    setLoading(true);
     setErro('');
     try {
       const { data } = await api.get('/users');
@@ -80,51 +74,64 @@ export default function User() {
     } catch {
       setErro('Não foi possível carregar usuários');
     } finally {
-      setCarregando(false);
+      setLoading(false);
     }
   }
 
-  async function salvar(e) {
+  async function listProfile() {
+    try {
+      const { data } = await api.get('/profiles');
+      setProfiles(data);
+    } catch {
+      setErro((e) => e || 'Não foi possível carregar perfis');
+    }
+  }
+
+  async function post_users(e) {
     e.preventDefault();
     setErro('');
-    setSalvando(true);
+    if (!perfilSelecionado?.id) {
+      setErro('Selecione um perfil');
+      return;
+    }
+    setSaving(true);
     try {
       const form = new FormData();
       form.append('name', nome);
       form.append('email', email);
-      form.append('profile_id', profileId);
+      form.append('profile_id', String(perfilSelecionado.id));
       form.append('is_admin', String(isAdmin));
 
-      if (!editando || alterarSenha) {
+      if (!editing || alterPassword) {
         form.append('password', senha);
       }
-      if (editando && alterarImagem && imagem) {
+      if (editing && alterImage && imagem) {
         form.append('image', imagem);
       }
-      if (!editando && imagem) {
+      if (!editing && imagem) {
         form.append('image', imagem);
       }
 
-      if (editando) {
-        await api.put(`/users/${editando.id}`, form);
+      if (editing) {
+        await api.put(`/users/${editing.id}`, form);
       } else {
         await api.post('/users', form);
       }
-      await listar();
-      fecharModal();
+      await get_user();
+      closeModal();
     } catch (err) {
       const msg = err?.response?.data?.error || err?.response?.data || 'Falha ao salvar usuário';
       setErro(typeof msg === 'string' ? msg : 'Falha ao salvar usuário');
     } finally {
-      setSalvando(false);
+      setSaving(false);
     }
   }
 
-  async function remover(u) {
+  async function delete_user(u) {
     setErro('');
     try {
       await api.delete(`/users/${u.id}`);
-      await listar();
+      await get_user();
     } catch (err) {
       const status = err?.response?.status;
       if (status === 405) setErro('Remoção não disponível no backend');
@@ -133,14 +140,19 @@ export default function User() {
   }
 
   React.useEffect(() => {
-    listar();
+    listProfile();
+    get_user();
   }, []);
+
+  function name_profile(profileId) {
+    return profiles.find((p) => p.id === profileId)?.name || profileId || '';
+  }
 
   return (
     <Box p={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h5">Usuários</Typography>
-        <Button variant="contained" onClick={abrirCriacao}>Novo</Button>
+        <Button variant="contained" onClick={openCreate}>Novo</Button>
       </Stack>
 
       {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
@@ -162,22 +174,18 @@ export default function User() {
               {users.map((u) => (
                 <TableRow key={u.id} hover>
                   <TableCell>
-                    <Avatar
-                      src={u.image || ''}
-                      alt={u.name || 'Usuário'}
-                      sx={{ width: 36, height: 36 }}
-                    >
-                      {iniciais(u.name)}
+                    <Avatar src={u.image || ''} alt={u.name || 'Usuário'} sx={{ width: 36, height: 36 }}>
+                      {init(u.name)}
                     </Avatar>
                   </TableCell>
                   <TableCell>{u.name}</TableCell>
                   <TableCell>{u.email}</TableCell>
-                  <TableCell>{u.profile_id}</TableCell>
+                  <TableCell>{name_profile(u.profile_id)}</TableCell>
                   <TableCell>{u.is_admin ? 'Sim' : 'Não'}</TableCell>
                   <TableCell align="right">
                     <Grid container spacing={1} justifyContent="flex-end">
                       <Grid item>
-                        <Button size="small" variant="outlined" onClick={() => abrirEdicao(u)}>Editar</Button>
+                        <Button size="small" variant="outlined" onClick={() => openEdit(u)}>Editar</Button>
                       </Grid>
                       <Grid item>
                         <Button
@@ -185,7 +193,7 @@ export default function User() {
                           variant="outlined"
                           color="error"
                           startIcon={<DeleteIcon />}
-                          onClick={() => remover(u)}
+                          onClick={() => delete_user(u)}
                         >
                           Remover
                         </Button>
@@ -194,35 +202,44 @@ export default function User() {
                   </TableCell>
                 </TableRow>
               ))}
-              {users.length === 0 && !carregando && (
+              {users.length === 0 && !loading && (
                 <TableRow>
-                  <TableCell colSpan={5}>Nenhum usuário encontrado</TableCell>
+                  <TableCell colSpan={6}>Nenhum usuário encontrado</TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
         </TableContainer>
-        <OverlayLoader aberto={carregando} />
+        <OverlayLoader aberto={loading} />
       </Box>
 
-      <Dialog open={abrir} onClose={fecharModal} fullWidth maxWidth="sm" keepMounted>
-        <DialogTitle>{editando ? 'Editar usuário' : 'Novo usuário'}</DialogTitle>
+      <Dialog open={open} onClose={closeModal} fullWidth maxWidth="sm" keepMounted>
+        <DialogTitle>{editing ? 'Editar usuário' : 'Novo usuário'}</DialogTitle>
         <DialogContent dividers sx={{ pt: 2 }}>
           {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
-          <Box component="form" id="user-form" onSubmit={salvar} sx={{ position: 'relative' }}>
+          <Box component="form" id="user-form" onSubmit={post_users} sx={{ position: 'relative' }}>
             <Stack spacing={2}>
               <TextField label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} fullWidth required />
               <TextField label="E-mail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} fullWidth required />
-              <TextField label="Profile ID" type="number" value={profileId} onChange={(e) => setProfileId(e.target.value)} fullWidth required />
+
+              <Autocomplete
+                options={profiles}
+                value={perfilSelecionado}
+                onChange={(_, v) => setPerfilSelecionado(v)}
+                getOptionLabel={(opt) => opt?.name || ''}
+                isOptionEqualToValue={(a, b) => a.id === b.id}
+                renderInput={(params) => <TextField {...params} label="Perfil" required />}
+              />
+
               <FormControlLabel control={<Checkbox checked={isAdmin} onChange={(e) => setIsAdmin(e.target.checked)} />} label="Administrador" />
 
-              {editando ? (
+              {editing ? (
                 <Stack spacing={1}>
                   <FormControlLabel
-                    control={<Switch checked={alterarSenha} onChange={(e) => setAlterarSenha(e.target.checked)} />}
+                    control={<Switch checked={alterPassword} onChange={(e) => setAlterPassword(e.target.checked)} />}
                     label="Alterar senha"
                   />
-                  {alterarSenha && (
+                  {alterPassword && (
                     <TextField
                       label="Nova senha"
                       type="password"
@@ -234,10 +251,10 @@ export default function User() {
                   )}
 
                   <FormControlLabel
-                    control={<Switch checked={alterarImagem} onChange={(e) => setAlterarImagem(e.target.checked)} />}
+                    control={<Switch checked={alterImage} onChange={(e) => setAlterImage(e.target.checked)} />}
                     label="Alterar imagem"
                   />
-                  {alterarImagem && (
+                  {alterImage && (
                     <Stack direction="row" spacing={2} alignItems="center">
                       <Button variant="outlined" component="label">
                         Selecionar imagem
@@ -268,13 +285,13 @@ export default function User() {
               )}
             </Stack>
 
-            <OverlayLoader aberto={salvando} />
+            <OverlayLoader aberto={saving} />
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={fecharModal} disabled={salvando}>Cancelar</Button>
-          <Button type="submit" form="user-form" variant="contained" disabled={salvando}>
-            {editando ? 'Salvar' : 'Criar'}
+          <Button onClick={closeModal} disabled={saving}>Cancelar</Button>
+          <Button type="submit" form="user-form" variant="contained" disabled={saving}>
+            {editing ? 'Salvar' : 'Criar'}
           </Button>
         </DialogActions>
       </Dialog>

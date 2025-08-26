@@ -8,6 +8,7 @@ import LordOfTheRings from './pages/movies/LordOfTheRings';
 import HarryPotter from './pages/movies/HarryPotter';
 import User from './pages/admin/User';
 import Profile from './pages/admin/Profile';
+import Permissions from './pages/admin/Permissions';
 import Login from './pages/Login';
 import ProtectedRoute from './features/auth/ProtectedRoute';
 import AuthProvider from './features/auth/AuthProvider';
@@ -15,7 +16,7 @@ import withPermission from './features/auth/withPermission';
 import Forbidden403 from './pages/Forbidden403';
 
 const UserPage = withPermission(User, ['listuser']);
-
+const PermissionsPage = withPermission(Permissions, ['listpermission']);
 const ProfilePage = withPermission(Profile, ['listuser']);
 
 const router = createBrowserRouter([
@@ -36,6 +37,7 @@ const router = createBrowserRouter([
               { path: 'movies/harry-potter', Component: HarryPotter },
               { path: 'admin/user', Component: UserPage },
               { path: 'admin/profile', Component: ProfilePage },
+              { path: 'admin/permission', Component: PermissionsPage },
             ],
           },
         ],
