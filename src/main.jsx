@@ -6,6 +6,7 @@ import Layout from './layouts/DashboardLayout';
 import Home from './pages/Home';
 import User from './pages/admin/User';
 import Profile from './pages/admin/Profile';
+import PublicComponents from './pages/public/PublicComponents'
 import Permissions from './pages/admin/Permissions';
 import Login from './pages/Login';
 import ProtectedRoute from './features/auth/ProtectedRoute';
@@ -34,6 +35,19 @@ const router = createBrowserRouter([
               { path: 'admin/user', Component: UserPage },
               { path: 'admin/profile', Component: ProfilePage },
               { path: 'admin/permission', Component: PermissionsPage },
+            ],
+          },
+        ],
+      },
+      {
+        Component: ProtectedRoute,
+        children: [
+          {
+            path: '/',
+            Component: Layout,
+            children: [
+              { path: '', Component: Home },
+              { path: 'public/components', Component: PublicComponents },
             ],
           },
         ],

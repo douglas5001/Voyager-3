@@ -16,30 +16,30 @@ function tokenValidated(token) {
 
 export default function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem('access_token') || '');
-  const [usuario, setUsuario] = useState(null);
+  const [user, setuser] = useState(null);
 
   useEffect(() => {
     if (token && !tokenValidated(token)) {
       localStorage.removeItem('access_token');
       setToken('');
-      setUsuario(null);
+      setuser(null);
     }
   }, [token]);
 
   useEffect(() => {
-    async function carregarPerfil() {
+    async function loadingProfile() {
       try {
         const { sub } = jwtDecode(token);
-        if (!sub) return setUsuario(null);
+        if (!sub) return setuser(null);
         const { data } = await api.get(`/users/${sub}`);
         const img = data?.image ? absoluteUrl(data.image) : '';
-        setUsuario({ ...data, image: img });
+        setuser({ ...data, image: img });
       } catch {
-        setUsuario(null);
+        setuser(null);
       }
     }
-    if (tokenValidated(token)) carregarPerfil();
-    else setUsuario(null);
+    if (tokenValidated(token)) loadingProfile();
+    else setuser(null);
   }, [token]);
 
   const claims = useMemo(() => {
@@ -50,40 +50,40 @@ export default function AuthProvider({ children }) {
   const permissoes = useMemo(() => Array.isArray(claims?.permissions) ? claims.permissions : [], [claims]);
   const administrador = Boolean(claims?.is_admin);
 
-  function saveToken(novo) {
+  function salvarToken(novo) {
     localStorage.setItem('access_token', novo);
     setToken(novo);
   }
 
-  function close() {
+  function sair() {
     localStorage.removeItem('access_token');
     setToken('');
-    setUsuario(null);
+    setuser(null);
     window.location.assign('/login');
   }
 
-  async function open(credenciais) {
+  async function entrar(credenciais) {
     const { data } = await api.post('/login', credenciais);
-    saveToken(data.access_token);
+    salvarToken(data.access_token);
     return data;
   }
 
-  function hasPermission(permissao) { return administrador || permissoes.includes(permissao); }
-  function hasAll(lista) { return administrador || !Array.isArray(lista) || lista.length === 0 || lista.every(permissoes.includes.bind(permissoes)); }
-  function hasAny(lista) { return administrador || !Array.isArray(lista) || lista.length === 0 || lista.some(permissoes.includes.bind(permissoes)); }
+  function possui(permissao) { return administrador || permissoes.includes(permissao); }
+  function possuiTodas(lista) { return administrador || !Array.isArray(lista) || lista.length === 0 || lista.every(permissoes.includes.bind(permissoes)); }
+  function possuiAlguma(lista) { return administrador || !Array.isArray(lista) || lista.length === 0 || lista.some(permissoes.includes.bind(permissoes)); }
 
   const valor = {
     token,
     claims,
-    usuario,
+    user,
     permissoes,
     administrador,
     autenticado: tokenValidated(token),
-    open,
-    close,
-    hasPermission,
-    hasAll,
-    hasAny,
+    entrar,
+    sair,
+    possui,
+    possuiTodas,
+    possuiAlguma,
   };
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;

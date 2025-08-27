@@ -20,14 +20,14 @@ export default function Profile() {
   const [nome, setNome] = React.useState('');
   const [permissionIds, setPermissionIds] = React.useState([]);
 
-  function ClearFoms() {
+  function clearForms() {
     setNome('');
     setPermissionIds([]);
   }
 
   function OpenCreate() {
     setsetEdting(null);
-    ClearFoms();
+    clearForms();
     setOpen(true);
   }
 

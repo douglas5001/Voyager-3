@@ -1,14 +1,14 @@
 import axios from 'axios';
-import { iniciarLoading, finalizarLoading } from './loadingBus';
+import { initLoading, finalizarLoading } from './loadingBus';
 
-export const apiBaseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+export const apiBaseURL = import.meta.env.VITE_API_URL || 'https://voyager.muppet.com.br';
 
 const api = axios.create({ baseURL: apiBaseURL });
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
-  iniciarLoading();
+  initLoading();
   return config;
 });
 

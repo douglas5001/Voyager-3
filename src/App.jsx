@@ -3,7 +3,8 @@ import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
-
+import PublicIcon from '@mui/icons-material/Public';
+import SettingsInputComponentIcon from '@mui/icons-material/SettingsInputComponent';
 import { createTheme } from '@mui/material/styles';
 import { ReactRouterAppProvider } from '@toolpad/core/react-router';
 import { Outlet } from 'react-router';
@@ -21,6 +22,14 @@ const theme = createTheme({
 
 const baseNavigation = [
   {
+    segment: 'public',
+    title: 'Public',
+    icon: <PublicIcon />,
+    children: [
+      { segment: 'components', title: 'Components', icon: <SettingsInputComponentIcon />},
+    ],
+  },
+  {
     segment: 'admin',
     title: 'Admin',
     icon: <AdminPanelSettingsIcon />,
@@ -33,15 +42,15 @@ const baseNavigation = [
   },
 ];
 
-const branding = { title: 'RPA' };
+const branding = { title: 'HUBBLE' };
 
-function filtrar(itens, { ownsAll, hasSome }) {
+function filtrar(itens, { possuiTodas, possuiAlguma }) {
   return itens
     .map((n) => {
-      const filhos = n.children ? filtrar(n.children, { ownsAll, hasSome }) : undefined;
+      const filhos = n.children ? filtrar(n.children, { possuiTodas, possuiAlguma }) : undefined;
       const all = Array.isArray(n.allOf) ? n.allOf : n.permission ? [n.permission] : [];
       const any = Array.isArray(n.anyOf) ? n.anyOf : [];
-      const permitido = ownsAll(all) && hasSome(any);
+      const permitido = possuiTodas(all) && possuiAlguma(any);
       if (!permitido) return null;
       if (Array.isArray(filhos) && filhos.length === 0) return null;
       return { ...n, children: filhos };
@@ -51,10 +60,10 @@ function filtrar(itens, { ownsAll, hasSome }) {
 
 
 export default function App() {
-  const { usuario, sair, ownsAll, hasSome } = useAuth();
-  const navigation = filtrar(baseNavigation, { ownsAll, hasSome });
+  const { user, sair, possuiTodas, possuiAlguma } = useAuth();
+  const navigation = filtrar(baseNavigation, { possuiTodas, possuiAlguma });
 
-  const session = usuario ? { user: { name: usuario.name, email: usuario.email, image: usuario.image } } : null;
+  const session = user ? { user: { name: user.name, email: user.email, image: user.image } } : null;
 
   return (
     <ReactRouterAppProvider
