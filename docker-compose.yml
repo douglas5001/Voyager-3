@@ -3,8 +3,22 @@ version: "3.9"
 services:
   frontend:
     build: .
-    container_name: hubble_frontend
+    container_name: hubblefrontend
     ports:
-      - "3000:80"
-      - "8000:8000"
-    restart: unless-stopped
+      - "3000:3000"
+    env_file:
+      - .env.docker
+    networks:
+      - hubble_network   # rede exclusiva
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflaredhubble
+    restart: always
+    command: tunnel --no-autoupdate run --token kdçajfkjwdlkakçdlkwakjog
+    networks:
+      - hubble_network   
+
+networks:
+  hubble_network:
+    driver: bridge

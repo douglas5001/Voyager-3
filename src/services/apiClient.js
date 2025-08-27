@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { initLoading, finalizarLoading } from './loadingBus';
 
-export const apiBaseURL = import.meta.env.VITE_API_URL || 'https://voyager.muppet.com.br';
+export const apiBaseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const api = axios.create({ baseURL: apiBaseURL });
 
